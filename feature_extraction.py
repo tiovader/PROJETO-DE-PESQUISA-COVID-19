@@ -9,11 +9,22 @@ import mahotas as mt
 import numpy as np
 import cv2 as cv
 
-logger = logging.getLogger(f"radiomics")
-logger.setLevel(logging.ERROR)
 
-DEFAULT_LBP_SETTINGS = {"eps": 1e-7, "R": 3, "P": 8, "method": "uniform"}
-RADIOMICS_FEATURES = ["FirstOrder", "GLCM", "GLRLM", "GLSZM", "NGTDM", "GLDM"]
+def _get_feature_objects():
+    objects = []
+    for feature in FEATURES:
+        module = import_module(f"radiomics.{feature.lower()}")
+        obj = getattr(module, f"Radiomics{feature}")
+        objects.append(obj)
+    return objects
+
+
+_logger = logging.getLogger(f"radiomics")
+_logger.setLevel(logging.ERROR)
+
+FEATURES = ["FirstOrder", "GLCM", "GLRLM", "GLSZM", "NGTDM", "GLDM"]
+_DEFAULT_LBP_SETTINGS = {"eps": 1e-7, "R": 3, "P": 8, "method": "uniform"}
+_FEATURES_OBJECTS = _get_feature_objects()
 
 
 class FeatureExtractor:
@@ -24,7 +35,7 @@ class FeatureExtractor:
             self.img = image
 
         self.mask = np.ones(self.img.shape)
-        self.lbp_settings = kwargs.pop("lbp", DEFAULT_LBP_SETTINGS)
+        self.lbp_settings = kwargs.pop("lbp", _DEFAULT_LBP_SETTINGS)
         self.features = ...
 
     def _get_haralick(self):
@@ -35,9 +46,7 @@ class FeatureExtractor:
     def _get_radiomics(self):
         img, mask = map(sitk.GetImageFromArray, (self.img, self.mask))
         data = pd.DataFrame()
-        for feature in RADIOMICS_FEATURES:
-            module = import_module(f"radiomics.{feature.lower()}")
-            obj = getattr(module, f"Radiomics{feature}")
+        for obj in _FEATURES_OBJECTS:
             extracted = obj(img, mask).execute()
             features = pd.DataFrame(extracted, index=[0], dtype="float64")
             data = data.merge(
