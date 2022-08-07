@@ -1,4 +1,6 @@
 __pycache__
-images/*/
-.*/
+.*
 csv/
+/images/*/
+!/images/covid-19/
+!/images/normal/

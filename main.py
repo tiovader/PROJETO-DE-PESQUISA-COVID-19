@@ -1,9 +1,10 @@
 from feature_extractor import FeatureExtractor
-import pre_processing
+import os
 import pandas as pd
 
 def main():
-    metadata = pre_processing.create_metadata()
+    metadata = pd.read_csv('./images/metadata.csv')
+    metadata['path'] = metadata.apply(lambda x: os.path.join('./images', x.folder, x.filename), axis=1)
     features = FeatureExtractor.from_dataframe(metadata)
     df = pd.merge(metadata, features, left_index=True, right_index=True)   
     to_drop = ["filename", "dataset", "path"]
